@@ -1,9 +1,9 @@
 package Email::MessageID;
-# $Id: MessageID.pm,v 1.2 2004/10/01 15:19:31 cwest Exp $
+# $Id: MessageID.pm,v 1.3 2004/12/23 02:01:43 cwest Exp $
 use strict;
 
 use vars qw[$VERSION];
-$VERSION = (qw$Revision: 1.2 $)[1];
+$VERSION = '1.31';
 
 use Email::Address;
 
@@ -60,14 +60,28 @@ sub new {
     return Email::Address->new(undef, $mid);
 }
 
-sub create_user {
-    require Time::HiRes;
-    return join '.', Time::HiRes::gettimeofday(), $$;
-}
-
 sub create_host {
     require Sys::Hostname;
     return Sys::Hostname::hostname();
+}
+
+my @CHARS = ('A'..'F','a'..'f',0..9);
+my %USERS;
+
+sub purge_users { undef %USERS }
+
+sub create_user {
+    my $pseudo_random = $_[0]->_generate_string;
+    my $user = join '.', time, $pseudo_random, $$;
+    &create_user if $USERS{$user}++;
+    return $user;
+}
+
+sub _generate_string {
+    my $length = 3;
+    $length = rand(8) until $length > 3;
+    
+    join '',map $CHARS[rand $#CHARS], 0 .. $length;
 }
 
 1;
