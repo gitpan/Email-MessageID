@@ -1,12 +1,11 @@
 package Email::MessageID;
-# $Id: MessageID.pm,v 1.1 2004/07/03 17:25:36 cwest Exp $
+# $Id: MessageID.pm,v 1.2 2004/10/01 15:19:31 cwest Exp $
 use strict;
 
 use vars qw[$VERSION];
-$VERSION = (qw$Revision: 1.1 $)[1];
+$VERSION = (qw$Revision: 1.2 $)[1];
 
 use Email::Address;
-use Class::Trigger qw[create_user create_host];
 
 =head1 NAME
 
@@ -55,34 +54,11 @@ sub new {
     
     $args{user} ||= $class->create_user;
     $args{host} ||= $class->create_host;
-    
-    $class->call_trigger( create_user => \$args{user} );
-    $class->call_trigger( create_host => \$args{host} );
-    
+        
     my $mid = join '@', @args{qw[user host]};
     
     return Email::Address->new(undef, $mid);
 }
-
-=pod
-
-There are two triggers for this method. After the C<user> has been
-initialized or generated, the C<create_user> trigger is invoked with
-a reference to the C<user> value as the second argument. You can create
-a trigger with the C<add_trigger> method.
-
-  Email::MessageID->add_trigger( create_user => sub {
-      my ($class, $user) = shift;
-      $$user .= ".my-special-app-name";
-  } );
-
-There is an identical trigger invoked for the C<host>, receiving the
-host value's reference as the second argument. This trigger is called
-C<create_host>.
-
-  Email::MessageID->add_trigger( create_host => sub { ... }  );
-
-=cut
 
 sub create_user {
     require Time::HiRes;
