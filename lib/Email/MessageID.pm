@@ -1,9 +1,8 @@
 package Email::MessageID;
-# $Id: MessageID.pm,v 1.3 2004/12/23 02:01:43 cwest Exp $
 use strict;
 
 use vars qw[$VERSION];
-$VERSION = '1.31';
+$VERSION = '1.35';
 
 use Email::Address;
 
@@ -60,28 +59,42 @@ sub new {
     return Email::Address->new(undef, $mid);
 }
 
+=item create_host
+
+  my $domain_part = Email::Address->create_host;
+
+This method returns the domain part of the message-id.
+
+=cut
+
 sub create_host {
     require Sys::Hostname;
     return Sys::Hostname::hostname();
 }
 
+=item create_user
+
+  my $local_part = Email::Address->create_user;
+
+This method returns a unique local part for the message-id.  It includes some
+random data and some predictable data.
+
+=cut
+
 my @CHARS = ('A'..'F','a'..'f',0..9);
-my %USERS;
 
-sub purge_users { undef %USERS }
-
-sub create_user {
-    my $pseudo_random = $_[0]->_generate_string;
-    my $user = join '.', time, $pseudo_random, $$;
-    &create_user if $USERS{$user}++;
-    return $user;
-}
-
+my $unique_value = 0;
 sub _generate_string {
     my $length = 3;
     $length = rand(8) until $length > 3;
     
-    join '',map $CHARS[rand $#CHARS], 0 .. $length;
+    join '', (map $CHARS[rand $#CHARS], 0 .. $length), $unique_value++;
+}
+
+sub create_user {
+    my $pseudo_random = $_[0]->_generate_string;
+    my $user = join '.', time, $pseudo_random, $$;
+    return $user;
 }
 
 1;
