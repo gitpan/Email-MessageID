@@ -1,16 +1,16 @@
 --- #YAML:1.0
 name:                Email-MessageID
-version:             1.351
+version:             1.400
 abstract:            Generate world unique message-ids
 license:             perl
-generated_by:        ExtUtils::MakeMaker version 6.32
+author:              
+    - Casey West <casey@geeknest.com>
+generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     
     Email::Address:                1.80
     Sys::Hostname:                 1.1
     Test::More:                    0.47
 meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
-    version: 1.2
-author:
-    - Casey West <casey@geeknest.com>
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3
