@@ -1,13 +1,86 @@
 use strict;
 use warnings;
 package Email::MessageID;
-use base 'Email::Address';
+{
+  $Email::MessageID::VERSION = '1.403'; # TRIAL
+}
+# ABSTRACT: Generate world unique message-ids.
 
-our $VERSION = '1.402';
+use overload '""' => 'as_string', fallback => 1;
+
+
+sub new {
+    my ($class, %args) = @_;
+
+    $args{user} ||= $class->create_user;
+    $args{host} ||= $class->create_host;
+
+    my $str = "$args{user}\@$args{host}";
+
+    bless \$str => $class;
+}
+
+
+my $_SYS_HOSTNAME_LONG;
+sub create_host {
+    unless (defined $_SYS_HOSTNAME_LONG) {
+      $_SYS_HOSTNAME_LONG = (eval { require Sys::Hostname::Long; 1 }) || 0;
+      require Sys::Hostname unless $_SYS_HOSTNAME_LONG;
+    }
+
+    return $_SYS_HOSTNAME_LONG ? Sys::Hostname::Long::hostname()
+                               : Sys::Hostname::hostname();
+}
+
+
+my @CHARS = ('A'..'F','a'..'f',0..9);
+
+my $unique_value = 0;
+sub _generate_string {
+    my $length = 3;
+    $length = rand(8) until $length > 3;
+
+    join '', (map $CHARS[rand $#CHARS], 0 .. $length), $unique_value++;
+}
+
+sub create_user {
+    my $pseudo_random = $_[0]->_generate_string;
+    my $user = join '.', time, $pseudo_random, $$;
+    return $user;
+}
+
+
+sub user { (split /@/, ${ $_[0] }, 2)[0] }
+sub host { (split /@/, ${ $_[0] }, 2)[1] }
+
+sub in_brackets {
+    my ($self) = @_;
+    return "<$$self>";
+}
+
+sub address {
+    my ($self) = @_;
+    return "$$self";
+}
+
+sub as_string {
+    my ($self) = @_;
+    return "$$self";
+}
+
+1;
+
+__END__
+
+=pod
 
 =head1 NAME
 
 Email::MessageID - Generate world unique message-ids.
+
+=head1 VERSION
+
+version 1.403
 
 =head1 SYNOPSIS
 
@@ -43,39 +116,11 @@ Using these values we have the ability to ensure world uniqueness down to
 a specific process running on a specific host, and the exact time down to
 six digits of microsecond precision.
 
-=cut
-
-sub new {
-    my ($class, %args) = @_;
-    
-    $args{user} ||= $class->create_user;
-    $args{host} ||= $class->create_host;
-        
-    my $mid = join '@', @args{qw[user host]};
-    
-    my $addr = Email::Address->new(undef, $mid);
-
-    bless $addr => $class;
-}
-
 =head2 create_host
 
   my $domain_part = Email::MessageID->create_host;
 
 This method returns the domain part of the message-id.
-
-=cut
-
-my $_SYS_HOSTNAME_LONG;
-sub create_host {
-    unless (defined $_SYS_HOSTNAME_LONG) {
-      $_SYS_HOSTNAME_LONG = (eval { require Sys::Hostname::Long; 1 }) || 0;
-      require Sys::Hostname unless $_SYS_HOSTNAME_LONG;
-    }
-
-    return $_SYS_HOSTNAME_LONG ? Sys::Hostname::Long::hostname()
-                               : Sys::Hostname::hostname();
-}
 
 =head2 create_user
 
@@ -84,29 +129,10 @@ sub create_host {
 This method returns a unique local part for the message-id.  It includes some
 random data and some predictable data.
 
-=cut
-
-my @CHARS = ('A'..'F','a'..'f',0..9);
-
-my $unique_value = 0;
-sub _generate_string {
-    my $length = 3;
-    $length = rand(8) until $length > 3;
-    
-    join '', (map $CHARS[rand $#CHARS], 0 .. $length), $unique_value++;
-}
-
-sub create_user {
-    my $pseudo_random = $_[0]->_generate_string;
-    my $user = join '.', time, $pseudo_random, $$;
-    return $user;
-}
-
 =head2 in_brackets
 
 When using Email::MessageID directly to populate the C<Message-ID> field, be
 sure to use C<in_brackets> to get the string inside angle brackets:
-
 
   header => [
     ...
@@ -120,38 +146,27 @@ Don't make this common mistake:
     'Message-Id' => Email::MessageID->new->as_string, # WRONG!
   ],
 
+=for Pod::Coverage address as_string host user
 
-=cut
+=head1 AUTHORS
 
-sub in_brackets {
-    my ($self) = @_;
-    return sprintf '<%s>', $self->as_string;
-}
+=over 4
 
-1;
+=item *
 
-__END__
+Casey West <casey@geeknest.com>
 
-=pod
+=item *
 
-=head1 SEE ALSO
+Ricardo SIGNES <rjbs@cpan.org>
 
-L<Email::Address>, L<Time::HiRes>, L<Sys::Hostname>, L<perl>.
+=back
 
-=head1 PERL EMAIL PROJECT
+=head1 COPYRIGHT AND LICENSE
 
-This module is maintained by the Perl Email Project.
+This software is copyright (c) 2004 by Casey West.
 
-L<http://emailproject.perl.org/wiki/Email::MessageID>
-
-=head1 AUTHOR
-
-Casey West, <F<casey@geeknest.com>>.
-
-=head1 COPYRIGHT
-
-  Copyright (c) 2004 Casey West.  All rights reserved.
-  This module is free software; you can redistribute it and/or modify it
-  under the same terms as Perl itself.
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
